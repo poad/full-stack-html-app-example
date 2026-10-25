@@ -1,0 +1,50 @@
+version: 2
+
+multi-ecosystem-groups:
+  infrastructure:
+    schedule:
+      interval: "daily"
+      timezone: "Asia/Tokyo"
+    assignees:
+      - "poad"
+
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    allow:
+      - dependency-type: "all"
+    rebase-strategy: "auto"
+    cooldown:
+      default-days: 7
+    patterns:
+      - "*"
+    multi-ecosystem-group: "app"
+
+  - package-ecosystem: "npm"
+    directories:
+      - "/"
+      - "/backend/"
+      - "/deploy-role/"
+    cooldown:
+      default-days: 7
+    allow:
+      - dependency-type: "all"
+    rebase-strategy: "auto"
+    patterns:
+      - "*"
+    multi-ecosystem-group: "app"
+
+  - package-ecosystem: "npm"
+    directories:
+      - "/frontend/"
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: "typescript"
+        versions: ["~7.0.2"]
+    allow:
+      - dependency-type: "all"
+    rebase-strategy: "auto"
+    patterns:
+      - "*"
+    multi-ecosystem-group: "app"

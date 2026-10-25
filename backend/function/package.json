@@ -1,0 +1,17 @@
+{
+  "name": "@cloudfront-cdn-template/function",
+  "version": "0.1.0",
+  "bin": "bin/cloudfront-cdn-template.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "lint": "oxfmt --check && oxlint",
+    "lint-fix": "oxfmt  && oxlint --fix"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.74.0",
+    "oxlint": "^1.89.0",
+    "typescript": "^7.0.2"
+  }
+}
