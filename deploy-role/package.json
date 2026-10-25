@@ -1,0 +1,29 @@
+{
+  "name": "@full-stack-html-app-example/deploy-role",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "lint": "oxfmt --check && oxlint",
+    "lint-fix": "oxfmt  && oxlint --fix",
+    "test": "vitest run",
+    "cdk": "cdk"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.275.0",
+    "constructs": "^10.8.1"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.16.20",
+    "@types/node": "^26.6.5",
+    "aws-cdk": "2.1146.1",
+    "oxfmt": "^0.74.0",
+    "oxlint": "^1.89.0",
+    "oxlint-plugin-awscdk": "^1.0.4",
+    "tsx": "^4.23.15",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}
