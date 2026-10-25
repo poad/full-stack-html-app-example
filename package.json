@@ -1,0 +1,28 @@
+{
+  "name": "full-stack-html-app-example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "lint-fix": "pnpm -r --if-present lint-fix"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.17.0",
+      "onFail": "download"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "^26.13.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.17.0",
+  "type": "module"
+}

@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+    - main
+
+  workflow_dispatch: null
+env:
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_REGION: us-west-2
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ !github.event.pull_request.draft }}
+    # 同時実行すると CREATE_IN_PROGRESS や UPDATE_IN_PROGRESS 状態で cdk deploy を行う可能性があるため抑止する
+    concurrency:
+      group: "cloudformation-llm-basic"
+      cancel-in-progress: false
+
+    runs-on: ubuntu-slim
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Setup pnpm
+      uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
+      with:
+        install: false
+
+    - name: Install dependencies
+      run: pnpm install --no-frozen-lockfile
+
+    - name: Install global dependency
+      run: pnpm add -g esbuild
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+      with:
+        role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ github.event.repository.name }}-deploy-role
+        role-session-name: GitHubActions
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: deploy
+      working-directory: agent
+      env:
+        DATABRICKS_WORKSPACE_URL: ${{ secrets.DATABRICKS_WORKSPACE_URL }}
+        DATABRICKS_OAUTH_CLIENT_ID: ${{ secrets.DATABRICKS_OAUTH_CLIENT_ID }}
+        DATABRICKS_OAUTH_CLIENT_SECRET: ${{ secrets.DATABRICKS_OAUTH_CLIENT_SECRET }}
+        DATABRICKS_UC_SCHEMA_NAME: ${{ secrets.DATABRICKS_UC_SCHEMA_NAME }}
+        DATABRICKS_UC_TABLE_PREFIX: ${{ secrets.DATABRICKS_UC_TABLE_PREFIX }}
+      run: |
+        pnx aws-cdk@latest deploy \
+          -c "databricks-workspace-url=$DATABRICKS_WORKSPACE_URL" \
+          -c "databricks-oauth-client-id=$DATABRICKS_OAUTH_CLIENT_ID" \
+          -c "databricks-oauth-client-secret=$DATABRICKS_OAUTH_CLIENT_SECRET" \
+          -c "databricks-uc-schema-name=$DATABRICKS_UC_SCHEMA_NAME" \
+          -c "databricks-uc-table-prefix=$DATABRICKS_UC_TABLE_PREFIX"

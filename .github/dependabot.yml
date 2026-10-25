@@ -1,0 +1,41 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+      timezone: Asia/Tokyo
+    allow:
+      - dependency-type: all
+    rebase-strategy: auto
+    assignees:
+      - poad
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns:
+          - '*'
+
+  - package-ecosystem: npm
+    directories:
+      - '/'
+      - '/agent/'
+      - '/deploy-role/'
+    schedule:
+      interval: daily
+      timezone: Asia/Tokyo
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: typescript
+        versions: ~7.0.0
+    allow:
+      - dependency-type: all
+    rebase-strategy: auto
+    assignees:
+      - poad
+    groups:
+      npm:
+        patterns:
+          - '*'

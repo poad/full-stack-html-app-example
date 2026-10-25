@@ -1,0 +1,300 @@
+---
+---
+
+<!doctype html>
+<html lang="ja">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<title>TODOリスト</title>
+	</head>
+	<body>
+		<div id="app">
+			<header>
+				<h1>TODOリスト</h1>
+				<div id="auth-controls">
+					<button id="login-btn">ログイン</button>
+					<button id="logout-btn" style="display: none">ログアウト</button>
+					<span id="user-label" style="display: none; margin-left: 8px"></span>
+				</div>
+			</header>
+
+			<div id="todo-section" style="display: none">
+				<form id="todo-form">
+					<input
+						type="text"
+						id="todo-input"
+						placeholder="TODOを追加..."
+						required
+					/>
+					<button type="submit">追加</button>
+				</form>
+				<ul id="todo-list"></ul>
+				<p id="empty-message" style="display: none; color: #666">
+					TODOはありません。
+				</p>
+			</div>
+
+			<div id="message" style="margin-top: 12px; min-height: 20px"></div>
+		</div>
+
+		<script>
+			// 環境変数 (Astro はビルド時に import.meta.env.PUBLIC_* を埋め込む)
+			const API_URL = (import.meta.env.PUBLIC_API_URL || '').replace(/\/$/, '');
+			const COGNITO_DOMAIN = import.meta.env.PUBLIC_COGNITO_DOMAIN || '';
+			const COGNITO_CLIENT_ID = import.meta.env.PUBLIC_COGNITO_CLIENT_ID || '';
+
+			const $ = (id) => document.getElementById(id);
+			const loginBtn = $('login-btn');
+			const logoutBtn = $('logout-btn');
+			const userLabel = $('user-label');
+			const todoSection = $('todo-section');
+			const todoForm = $('todo-form');
+			const todoInput = $('todo-input');
+			const todoList = $('todo-list');
+			const emptyMessage = $('empty-message');
+			const messageEl = $('message');
+
+			let isAuthenticated = false;
+
+			function showMessage(text, type = 'info') {
+				messageEl.textContent = text;
+				messageEl.style.color = type === 'error' ? '#d32f2f' : type === 'success' ? '#388e3c' : '#666';
+			}
+
+			async function api(path, options = {}) {
+				const res = await fetch(`${API_URL}${path}`, {
+					credentials: 'include',
+					headers: {
+						'Content-Type': 'application/json',
+						...options.headers,
+					},
+					...options,
+				});
+				if (res.status === 204) return null;
+				const text = await res.text();
+				if (!res.ok) {
+					const err = typeof text === 'string' && text.startsWith('{')
+						? JSON.parse(text)
+						: { error: text };
+					throw new Error(err.error || `HTTP ${res.status}`);
+				}
+				return text ? JSON.parse(text) : null;
+			}
+
+			async function checkAuth() {
+				try {
+					const data = await api('/auth/me');
+					isAuthenticated = data && data.authenticated;
+				} catch {
+					isAuthenticated = false;
+				}
+				updateUI();
+			}
+
+			function updateUI() {
+				if (isAuthenticated) {
+					loginBtn.style.display = 'none';
+					logoutBtn.style.display = 'inline-block';
+					userLabel.style.display = 'inline-block';
+					userLabel.textContent = 'ログイン済み';
+					todoSection.style.display = 'block';
+					loadTodos();
+				} else {
+					loginBtn.style.display = 'inline-block';
+					logoutBtn.style.display = 'none';
+					userLabel.style.display = 'none';
+					todoSection.style.display = 'none';
+					todoList.innerHTML = '';
+					emptyMessage.style.display = 'none';
+				}
+			}
+
+			function escapeHtml(text) {
+				const div = document.createElement('div');
+				div.textContent = text;
+				return div.innerHTML;
+			}
+
+			async function loadTodos() {
+				try {
+					const data = await api('/api/todos');
+					renderTodos(data?.todos ?? []);
+				} catch (err) {
+					showMessage('TODOの取得に失敗しました: ' + err.message, 'error');
+				}
+			}
+
+			function renderTodos(todos) {
+				todoList.innerHTML = '';
+				if (todos.length === 0) {
+					emptyMessage.style.display = 'block';
+					return;
+				}
+				emptyMessage.style.display = 'none';
+				todos.forEach((todo) => {
+					const li = document.createElement('li');
+					li.style.display = 'flex';
+					li.style.alignItems = 'center';
+					li.style.gap = '8px';
+					li.style.marginBottom = '8px';
+					li.style.padding = '8px';
+					li.style.border = '1px solid #ddd';
+					li.style.borderRadius = '6px';
+
+					const checkbox = document.createElement('input');
+					checkbox.type = 'checkbox';
+					checkbox.checked = todo.completed;
+					checkbox.onchange = async () => {
+						try {
+							await api(`/api/todos/${todo.todoId}`, {
+								method: 'PUT',
+								body: JSON.stringify({ completed: checkbox.checked }),
+							});
+							loadTodos();
+						} catch (err) {
+							showMessage('更新に失敗しました: ' + err.message, 'error');
+							checkbox.checked = !checkbox.checked;
+						}
+					};
+
+					const title = document.createElement('span');
+					title.textContent = escapeHtml(todo.title);
+					title.style.flex = '1';
+					if (todo.completed) {
+						title.style.textDecoration = 'line-through';
+						title.style.color = '#999';
+					}
+
+					const delBtn = document.createElement('button');
+					delBtn.textContent = '削除';
+					delBtn.style.padding = '4px 8px';
+					delBtn.style.fontSize = '12px';
+					delBtn.onclick = async () => {
+						if (!confirm('このTODOを削除しますか？')) return;
+						try {
+							await api(`/api/todos/${todo.todoId}`, { method: 'DELETE' });
+							loadTodos();
+						} catch (err) {
+							showMessage('削除に失敗しました: ' + err.message, 'error');
+						}
+					};
+
+					li.appendChild(checkbox);
+					li.appendChild(title);
+					li.appendChild(delBtn);
+					todoList.appendChild(li);
+				});
+			}
+
+			todoForm.onsubmit = async (e) => {
+				e.preventDefault();
+				const title = todoInput.value.trim();
+				if (!title) return;
+				try {
+					await api('/api/todos', {
+						method: 'POST',
+						body: JSON.stringify({ title }),
+					});
+					todoInput.value = '';
+					loadTodos();
+				} catch (err) {
+					showMessage('作成に失敗しました: ' + err.message, 'error');
+				}
+			};
+
+			loginBtn.onclick = () => {
+				if (!COGNITO_DOMAIN || !COGNITO_CLIENT_ID) {
+					showMessage('Cognito の設定が不足しています', 'error');
+					return;
+				}
+				const redirectUri = encodeURIComponent(`${API_URL}/auth/callback`);
+				const loginUrl = `${COGNITO_DOMAIN}/login?client_id=${COGNITO_CLIENT_ID}&response_type=code&scope=openid+email+profile&redirect_uri=${redirectUri}`;
+				window.location.href = loginUrl;
+			};
+
+			logoutBtn.onclick = async () => {
+				try {
+					await api('/auth/logout');
+				} catch {
+					/* ignore */
+				}
+				isAuthenticated = false;
+				updateUI();
+			};
+
+			checkAuth();
+		</script>
+	</body>
+</html>
+<style>
+	body {
+		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+			'Helvetica Neue', Arial, sans-serif;
+		max-width: 600px;
+		margin: 40px auto;
+		padding: 0 16px;
+		line-height: 1.5;
+		color: #333;
+	}
+	h1 {
+		font-size: 24px;
+		margin-bottom: 16px;
+	}
+	header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 24px;
+	}
+	#auth-controls {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	button {
+		padding: 8px 16px;
+		font-size: 14px;
+		cursor: pointer;
+		border: 1px solid #ccc;
+		background: #fff;
+		border-radius: 6px;
+	}
+	button:hover {
+		background: #f5f5f5;
+	}
+	#logout-btn {
+		background: #d32f2f;
+		color: #fff;
+		border-color: #d32f2f;
+	}
+	#logout-btn:hover {
+		background: #b71c1c;
+	}
+	form {
+		display: flex;
+		gap: 8px;
+		margin-bottom: 16px;
+	}
+	input[type='text'] {
+		flex: 1;
+		padding: 8px 12px;
+		font-size: 14px;
+		border: 1px solid #ccc;
+		border-radius: 6px;
+	}
+	button[type='submit'] {
+		background: #1976d2;
+		color: #fff;
+		border-color: #1976d2;
+	}
+	button[type='submit']:hover {
+		background: #1565c0;
+	}
+	ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+</style>
