@@ -11,9 +11,14 @@ allowBuilds:
 
 minimumReleaseAge: 10080 # 7 days in minutes
 minimumReleaseAgeExclude:
-  - pnpm@12.19.0
+  - pnpm@12.21.0
+  - '@aws-sdk/credential-provider-http@3.972.83'
+  - '@aws-sdk/credential-provider-ini@3.973.26'
+  - '@aws-sdk/credential-provider-sso@3.973.25'
+  - '@aws-sdk/nested-clients@3.998.0'
 
 overrides:
+  astro@>=5.14.3 <=7.4.6: ^7.4.7
   chokidar: '>=5'
   semver: '>=7'
 
