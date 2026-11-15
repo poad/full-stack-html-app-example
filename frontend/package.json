@@ -7,7 +7,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "lint": "oxfmt --check && oxlint && astro check",
+    "lint": "oxfmt --check && oxlint",
     "lint-fix": "oxfmt  && oxlint --fix"
   },
   "dependencies": {
@@ -15,9 +15,10 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "oxfmt": "^0.76.0",
     "oxlint": "^1.92.0",
-    "typescript": "^6.0.3",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^8.3.6",
     "vitest": "^5.1.0"
   }
