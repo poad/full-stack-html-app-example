@@ -238,7 +238,7 @@ export class BackendStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       memorySize: 512,
       architecture: lambda.Architecture.ARM_64,
-      runtime: lambda.Runtime.NODEJS_24_X,
+      runtime: lambda.Runtime.NODEJS_26_X,
       bundling: {
         target: 'node24',
         externalModules: ['@aws-sdk/*'],
